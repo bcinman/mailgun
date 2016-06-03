@@ -120,6 +120,18 @@ defmodule Mailgun.Client do
       html: Dict.get(email, :html, ""),
       subject: Dict.get(email, :subject, ""),
     })
+
+    attrs = case attrs[:to] do
+      to when is_list(to) ->
+        Dict.put(attrs, :to, Enum.join(to, ", "))
+      _ -> attrs
+    end
+
+    attrs = case Dict.get(attrs, :recipient_variables) do
+      nil -> attrs
+      rv -> Dict.put(attrs, :recipient_variables, Poison.encode!(rv))
+    end
+
     ctype   = 'application/x-www-form-urlencoded'
     body    = URI.encode_query(Dict.drop(attrs, [:attachments]))
 

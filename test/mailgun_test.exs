@@ -67,6 +67,27 @@ defmodule MailgunTest do
     end
   end
 
+  test "send_email accepts a list of recipients" do
+    config = [domain: "https://api.mailgun.net/v3/mydomain.test", key: "my-key"]
+    use_cassette :stub, [url: "https://api.mailgun.net/v3/mydomain.test/messages",
+                         method: "post",
+                         status_code: ["HTTP/1.1", 200, "OK"],
+                         body: @success_json] do
+
+      {:ok, body} = Mailgun.Client.send_email config,
+                                              to: ["foo@bar.test", "bar@baz.test"],
+                                              recipient_variables: %{
+                                                "foo@bar.test" => %{id: "1"},
+                                                "bar@baz.test" => %{id: "2"},
+                                              },
+                                              from: "foo@bar.test",
+                                              subject: "hello!",
+                                              text: "How goes it?"
+
+      assert body == @success_json
+    end
+  end
+
   test "send_email returns {:error, reason} if send failed" do
     config = [domain: "https://api.mailgun.net/v3/mydomain.test", key: "my-key"]
     use_cassette :stub, [url: "https://api.mailgun.net/v3/mydomain.test/messages",
@@ -85,6 +106,7 @@ defmodule MailgunTest do
     end
   end
 
+
   test "sending in test mode writes the mail fields to a file" do
     file_path = "/tmp/mailgun.json"
     config = [domain: "https://api.mailgun.net/v3/mydomain.test", key: "my-key", mode: :test, test_file_path: file_path]
@@ -97,5 +119,4 @@ defmodule MailgunTest do
     file_contents = File.read!(file_path)
     assert file_contents == "{\"to\":\"foo@bar.test\",\"text\":\"How goes it?\",\"subject\":\"hello!\",\"from\":\"foo@bar.test\"}"
   end
-
 end
